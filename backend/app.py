@@ -4,8 +4,11 @@ import openai
 import os
 import requests
 import json
+from pandasai import SmartDataframe
+import pandas as pd
 import time
 from dotenv import load_dotenv
+from pandasai.llm.openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Load environment variables
@@ -157,10 +160,6 @@ def generate_dashboard():
 
 Guidelines:
 - Choose 2-4 relevant widgets based on the user's request
-- For sports: use APIs like "https://api.github.com/repos/microsoft/vscode" (as example), "https://jsonplaceholder.typicode.com/posts", "https://api.github.com/users/github"
-- For sales/business: use "https://jsonplaceholder.typicode.com/users", "https://httpbin.org/json"
-- For courses: use "https://jsonplaceholder.typicode.com/albums", "https://api.github.com/repos/facebook/react"
-- Use publicly accessible APIs without authentication
 - Make widget names descriptive and relevant to the prompt
 - Choose appropriate chart types: "bar" for comparisons, "line" for trends over time, "number" for single metrics
 - Return compact JSON without any newlines, spaces, or formatting
@@ -190,7 +189,7 @@ User prompt: """
         
         # Step 2: Fetch data from each API endpoint specified in the dashboard
         widgets_with_data = []
-        
+
         # Use ThreadPoolExecutor to fetch data from multiple APIs concurrently
         with ThreadPoolExecutor(max_workers=4) as executor:
             future_to_widget = {
@@ -201,12 +200,29 @@ User prompt: """
             for future in as_completed(future_to_widget):
                 widget = future_to_widget[future]
                 try:
-                    widget_data = future.result()
+                    df = pd.read_csv('./data/sales.csv')
+                    df.columns = df.columns.str.strip()
+                    df = df.astype(str)
+                    llm = OpenAI(api_token=os.environ["OPENAI_API_KEY"])
+                    smart_df = SmartDataframe(df, config={
+                        "llm": llm,
+                        "save_charts": False,  # disables plt.show() and saving images
+                        "enable_cache": False,  # optional but reduces weird behavior
+                        "verbose": True,
+                        "disable_plotting": True,
+                    })
+                    pandas_prompt = """Read the csv thoroughly and return a JSON object with this exact structure:
+
+structure rules:
+- For "bar" charts: [{"name": "Category", "value": number}, {"name": "Category2", "value": number}, ...]
+- For "line" charts: [{"name": "Period", "value": number}, {"name": "Period2", "value": number}, ...]  
+- For "number" widgets: {"value": number, "label": "Description"}
+User topic: """
                     widgets_with_data.append({
                         'name': widget['name'],
                         'type': widget['type'],
-                        'source': widget['source'],
-                        'data': widget_data
+                        'source': "PandasAI",
+                        'data': smart_df.chat(pandas_prompt + "You should generate a: " + widget['type'] + "Prompt: " + prompt + " Specifically, look for: " + widget['name'])
                     })
                 except Exception as e:
                     # If data fetching fails, use fallback data
