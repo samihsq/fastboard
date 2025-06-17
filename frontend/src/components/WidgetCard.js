@@ -332,7 +332,7 @@ export default function WidgetCard({ widget, category, index, dataSource = "AI R
             </div>
             
             <p className="text-gray-300 text-sm mb-4">
-              What would you like to show instead of "{name}"?
+              What would you like to show instead of &lsquo;{name}&rsquo;?
               {dashboardContext && (
                 <span className="block text-gray-400 text-xs mt-1">
                   Context: {dashboardContext}
