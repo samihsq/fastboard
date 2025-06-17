@@ -11,9 +11,39 @@ const getIcon = (type) => {
   }
 };
 
-export default function WidgetCard({ widget, category, index, dataSource = "AI Research" }) {
-  const { name, type, data } = widget;
+// Format numbers with k/M/B/T suffix
+const formatNumber = (value) => {
+  if (typeof value !== 'number') return value;
   
+  const absValue = Math.abs(value);
+  
+  if (absValue >= 1000000000000) {
+    return (value / 1000000000000).toFixed(1).replace(/\.0$/, '') + 'T';
+  } else if (absValue >= 1000000000) {
+    return (value / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+  } else if (absValue >= 1000000) {
+    return (value / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  } else if (absValue >= 1000) {
+    return (value / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  } else {
+    return value.toString();
+  }
+};
+
+export default function WidgetCard({ widget, category, index, dataSource = "AI Research" }) {
+  const { name, type, data, source_url } = widget;
+  
+  // Extract domain name from URL for cleaner display
+  const getSourceName = (url) => {
+    if (!url) return dataSource;
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname.replace('www.', '');
+    } catch {
+      return url.length > 30 ? url.substring(0, 30) + '...' : url;
+    }
+  };
+
   const renderChart = () => {
     if (!data) {
       return (
@@ -46,6 +76,7 @@ export default function WidgetCard({ widget, category, index, dataSource = "AI R
                   stroke="#9CA3AF" 
                   fontSize={12} 
                   tick={{ fill: '#9CA3AF' }}
+                  tickFormatter={formatNumber}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -53,7 +84,8 @@ export default function WidgetCard({ widget, category, index, dataSource = "AI R
                     border: '1px solid #374151',
                     borderRadius: '8px',
                     color: '#E5E7EB'
-                  }} 
+                  }}
+                  formatter={(value) => [formatNumber(value), 'Value']}
                 />
                 <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -81,6 +113,7 @@ export default function WidgetCard({ widget, category, index, dataSource = "AI R
                   stroke="#9CA3AF" 
                   fontSize={12} 
                   tick={{ fill: '#9CA3AF' }}
+                  tickFormatter={formatNumber}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -88,7 +121,8 @@ export default function WidgetCard({ widget, category, index, dataSource = "AI R
                     border: '1px solid #374151',
                     borderRadius: '8px',
                     color: '#E5E7EB'
-                  }} 
+                  }}
+                  formatter={(value) => [formatNumber(value), 'Value']}
                 />
                 <Line 
                   type="monotone" 
@@ -109,7 +143,7 @@ export default function WidgetCard({ widget, category, index, dataSource = "AI R
             <div className="flex flex-col items-center justify-center h-48">
               <div className="text-6xl font-bold text-blue-400 mb-2">
                 {typeof data.value === 'number' ? 
-                  data.value.toLocaleString() : 
+                  formatNumber(data.value) : 
                   data.value
                 }
               </div>
@@ -156,7 +190,20 @@ export default function WidgetCard({ widget, category, index, dataSource = "AI R
       {/* Widget Footer */}
       <div className="flex items-center justify-between text-xs text-gray-400">
         <div className="truncate flex-1">
-          <span className="font-medium">Source:</span> {dataSource}
+          <span className="font-medium">Source:</span>{' '}
+          {source_url ? (
+            <a 
+              href={source_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-blue-400 hover:underline transition-colors"
+              title={source_url}
+            >
+              {getSourceName(source_url)}
+            </a>
+          ) : (
+            getSourceName()
+          )}
         </div>
         <div className="ml-2 px-2 py-1 bg-gray-700/50 rounded-full">
           {type.toUpperCase()}

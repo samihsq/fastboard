@@ -17,7 +17,7 @@ export default function DashboardGrid({ widgets, category, dataSource, modelUsed
           widget={widget}
           category={category}
           index={index}
-          dataSource={dataSource || "AI Research"}
+          dataSource={"Web Research"}
         />
       ))}
     </div>

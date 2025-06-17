@@ -51,7 +51,7 @@ def generate_dashboard():
 
 Research the given topic thoroughly and return a JSON object with this exact structure:
 
-{"dash_name": "Descriptive dashboard name", "category": "sports" | "business" | "entertainment" | "technology" | "science" | "finance" | "health" | "education" | "other", "widgets": [{"name": "Widget title", "type": "bar" | "line" | "number", "data": DATA_STRUCTURE}]}
+{"dash_name": "Descriptive dashboard name", "category": "sports" | "business" | "entertainment" | "technology" | "science" | "finance" | "health" | "education" | "other", "widgets": [{"name": "Widget title", "type": "bar" | "line" | "number", "data": DATA_STRUCTURE, "source_url": "URL where you found this specific data"}]}
 
 DATA_STRUCTURE rules:
 - For "bar" charts: [{"name": "Category", "value": number}, {"name": "Category2", "value": number}, ...]
@@ -62,6 +62,7 @@ Guidelines:
 - Research the topic using current, factual information
 - Create 3-4 relevant widgets that best represent the topic
 - Use real statistics, numbers, and data points
+- For each widget, include the "source_url" field with the actual URL where you found that specific data
 - Choose appropriate chart types based on the data:
   * "bar" for comparisons (stats, rankings, categories)
   * "line" for trends over time (years, seasons, periods)
@@ -71,6 +72,7 @@ Guidelines:
 - For people: include career stats, achievements, timeline data
 - For companies: financial data, market metrics, growth trends
 - For topics: relevant statistics, comparisons, historical data
+- Include credible source URLs for each widget (e.g., official websites, news sources, databases)
 - Return compact JSON without any newlines, spaces, or formatting
 
 Examples:

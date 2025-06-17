@@ -81,7 +81,7 @@ export default function PromptInput() {
             disabled={loading}
             className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Generating...' : 'Send'}
+            {loading ? 'Generating...' : 'Generate'}
           </button>
         </div>
       </form>

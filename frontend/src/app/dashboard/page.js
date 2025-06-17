@@ -137,20 +137,6 @@ export default function Dashboard() {
                 {dashboardData.category.toUpperCase()}
               </span>
             )}
-            
-            {/* Data Source Badge */}
-            {dashboardData?.data_source && (
-              <span className="px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-200 rounded-full text-sm font-medium">
-                📡 {dashboardData.data_source}
-              </span>
-            )}
-            
-            {/* Model Badge */}
-            {dashboardData?.model_used && (
-              <span className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 text-purple-200 rounded-full text-sm font-medium">
-                🤖 {dashboardData.model_used}
-              </span>
-            )}
           </div>
 
           {error && (
@@ -206,15 +192,19 @@ export default function Dashboard() {
                 📊 {dashboardData.widgets?.length || 0} widgets
               </span>
               {dashboardData.generated_at && (
-                <span>
-                  🕒 Generated {new Date(dashboardData.generated_at * 1000).toLocaleTimeString()}
-                </span>
+                <>
+                  <span>•</span>
+                  <span>
+                    🕒 Generated {new Date(dashboardData.generated_at * 1000).toLocaleTimeString()}
+                  </span>
+                </>
               )}
-              {dashboardData.data_source && (
-                <span>
-                  🔍 Powered by {dashboardData.data_source}
-                </span>
-              )}
+              
+              <span>•</span>
+              <span>
+               Made with ❤️ by Samih and Nathan @ Corgi Hacks
+              </span>
+              
             </div>
           </div>
         )}
