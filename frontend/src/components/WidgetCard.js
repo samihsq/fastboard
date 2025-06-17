@@ -1,0 +1,178 @@
+'use client';
+
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const getIcon = (type) => {
+  switch (type) {
+    case 'bar': return '📊';
+    case 'line': return '📈';
+    case 'number': return '🔢';
+    default: return '📊';
+  }
+};
+
+export default function WidgetCard({ widget, category, index }) {
+  const { name, type, source, data } = widget;
+  
+  const renderChart = () => {
+    if (!data) {
+      return (
+        <div className="h-48 flex items-center justify-center text-gray-400">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto mb-2"></div>
+            <p>Loading data...</p>
+          </div>
+        </div>
+      );
+    }
+
+    switch (type) {
+      case 'bar':
+        if (Array.isArray(data) && data.length > 0) {
+          return (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#9CA3AF" 
+                  fontSize={12} 
+                  tick={{ fill: '#9CA3AF' }}
+                />
+                <YAxis 
+                  stroke="#9CA3AF" 
+                  fontSize={12} 
+                  tick={{ fill: '#9CA3AF' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1F2937', 
+                    border: '1px solid #374151',
+                    borderRadius: '8px',
+                    color: '#E5E7EB'
+                  }} 
+                />
+                <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          );
+        }
+        break;
+      
+      case 'line':
+        if (Array.isArray(data) && data.length > 0) {
+          return (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#9CA3AF" 
+                  fontSize={12} 
+                  tick={{ fill: '#9CA3AF' }}
+                />
+                <YAxis 
+                  stroke="#9CA3AF" 
+                  fontSize={12} 
+                  tick={{ fill: '#9CA3AF' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1F2937', 
+                    border: '1px solid #374151',
+                    borderRadius: '8px',
+                    color: '#E5E7EB'
+                  }} 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#10B981" 
+                  strokeWidth={3}
+                  dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          );
+        }
+        break;
+      
+      case 'number':
+        if (data && typeof data === 'object' && 'value' in data) {
+          return (
+            <div className="flex flex-col items-center justify-center h-48">
+              <div className="text-6xl font-bold text-blue-400 mb-2">
+                {typeof data.value === 'number' ? 
+                  data.value.toLocaleString() : 
+                  data.value
+                }
+              </div>
+              <div className="text-gray-400 text-sm">
+                {data.label || 'Metric'}
+              </div>
+            </div>
+          );
+        }
+        break;
+    }
+    
+    // Fallback for when data doesn't match expected format
+    return (
+      <div className="h-48 flex items-center justify-center text-gray-400">
+        <div className="text-center">
+          <div className="text-4xl mb-2">{getIcon(type)}</div>
+          <p className="text-sm">Data format not supported</p>
+          <p className="text-xs mt-1">
+            {Array.isArray(data) ? `${data.length} items` : 'Invalid data'}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  // Determine the source display name (just domain or API name)
+  const getSourceName = (url) => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    } catch {
+      return url.split('/')[2] || url;
+    }
+  };
+
+  return (
+    <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-lg hover:bg-white/15 transition-all duration-300">
+      {/* Widget Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-white truncate flex-1 pr-2">
+          {name}
+        </h3>
+        <div className="text-2xl">
+          {getIcon(type)}
+        </div>
+      </div>
+      
+      {/* Widget Content */}
+      <div className="mb-4">
+        {renderChart()}
+      </div>
+      
+      {/* Widget Footer */}
+      <div className="flex items-center justify-between text-xs text-gray-400">
+        <div className="truncate flex-1">
+          <span className="font-medium">Source:</span> {getSourceName(source)}
+        </div>
+        <div className="ml-2 px-2 py-1 bg-gray-700/50 rounded-full">
+          {type.toUpperCase()}
+        </div>
+      </div>
+      
+      {/* Debug info - can be removed in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-2 text-xs text-gray-500 border-t border-gray-600 pt-2">
+          Data: {JSON.stringify(data, null, 2).substring(0, 100)}...
+        </div>
+      )}
+    </div>
+  );
+} 
