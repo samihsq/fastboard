@@ -138,49 +138,7 @@ export default function Dashboard() {
               </span>
             </div>
           )}
-          
-          {/* Regenerate Prompt */}
-          <div className="max-w-2xl mt-6">
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const prompt = e.target.prompt.value;
-              if (prompt.trim()) {
-                generateNewDashboard(prompt);
-                e.target.prompt.value = '';
-              }
-            }}>
-              <div className="backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-2xl px-5 py-3 shadow-md flex items-center gap-4">
-                <input
-                  name="prompt"
-                  placeholder="Generate a new dashboard..."
-                  className="flex-1 bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base"
-                  disabled={loading}
-                />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium disabled:opacity-50"
-                >
-                  {loading ? 'Generating...' : 'Generate'}
-                </button>
-              </div>
-            </form>
-            
-            {/* CSV Upload Button */}
-            <div className="mt-4 flex justify-center">
-              <label className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition-colors text-white text-sm font-medium rounded-xl cursor-pointer disabled:opacity-50">
-                <HiOutlineUpload className="w-4 h-4" />
-                Upload CSV
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleCSVUpload}
-                  className="hidden"
-                  disabled={loading}
-                />
-              </label>
-            </div>
-          </div>
+
 
           {error && (
             <div className="mt-4 bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-2 rounded-lg">
@@ -196,7 +154,36 @@ export default function Dashboard() {
             category={dashboardData.category}
           />
         )}
-        
+                  
+        {/* Regenerate Prompt */}
+        <div className="w-2/3 mx-auto mt-6">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const prompt = e.target.prompt.value;
+            if (prompt.trim()) {
+              generateNewDashboard(prompt);
+              e.target.prompt.value = '';
+            }
+          }}>
+            <div className="backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-2xl px-5 py-3 shadow-md flex items-center gap-4">
+              <input
+                name="prompt"
+                placeholder="Generate a new dashboard..."
+                className="flex-1 bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base"
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium disabled:opacity-50"
+              >
+                {loading ? 'Generating...' : 'Generate'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+
         {/* Footer Info */}
         {dashboardData && (
           <div className="mt-8 text-center text-gray-400 text-sm">

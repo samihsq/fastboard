@@ -73,7 +73,7 @@ export default function PromptInput() {
             name="prompt"
             rows={1}
             placeholder="What kind of dashboard would you like?"
-            className="flex-1 resize-none bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base"
+            className="flex-2 resize-none bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base"
             disabled={loading}
           />
           <button

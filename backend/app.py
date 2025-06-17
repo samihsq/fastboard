@@ -240,13 +240,5 @@ User prompt: """
     except Exception as e:
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
-# Keep the original chat endpoint for backwards compatibility
-@app.route('/chat', methods=['POST'])
-def chat():
-    """
-    Original endpoint - now redirects to generate-dashboard
-    """
-    return generate_dashboard()
-
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000) 
