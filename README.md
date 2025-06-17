@@ -2,7 +2,12 @@
 
 A robust AI-powered dashboard generator that transforms natural language prompts into interactive data visualizations.
 
-🔗 **Live Demo**: [https://fastboard-frontend.onrender.com/](https://fastboard-frontend.onrender.com/)
+🔗 **Live Demo (cold start takes ~1 minute for everything to load)**: [https://fastboard-frontend.onrender.com/](https://fastboard-frontend.onrender.com/)
+
+<p align="center">
+  <img width="640" alt="Image of front page, with prompt: Tell me a bit about Lebron James's scoring history" src="https://github.com/user-attachments/assets/349aeda2-717f-4780-b536-7bc07b4a9623" />
+  <img width="640" alt="Dashboard preview, with various nodes" src="https://github.com/user-attachments/assets/66e3b616-9eac-49cf-b158-2723c8cb2577" />
+</p>
 
 ## Quick Installation
 
@@ -51,7 +56,7 @@ _Created at Corgi Hacks with ❤️_
 
 ## Tech Stack
 
-**Frontend:** Next.js, React, Tailwind CSS, Recharts
-**Backend:** Flask, Flask-CORS, Requests
-**AI:** Perplexity Sonar Pro
-**Hosting:** Render.com
+- **Frontend:** Next.js, React, Tailwind CSS, Recharts
+- **Backend:** Flask, Flask-CORS, Requests
+- **AI:** Perplexity Sonar Pro
+- **Hosting:** Render.com
