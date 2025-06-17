@@ -123,7 +123,7 @@ export default function PromptInput() {
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) fileInput.value = '';
   };
-
+  const buttonRef = useRef(null);
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
       <form onSubmit={handleSubmit}>
@@ -140,11 +140,18 @@ export default function PromptInput() {
             className="flex-1 resize-none bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base h-6 overflow-hidden leading-6"
             disabled={loading}
             onInput={handleTextareaInput}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                buttonRef.current?.click();
+              }
+            }}
             style={{ height: '1.5rem' }}
           />
           <button
             type="submit"
             disabled={loading}
+            ref={buttonRef}
             className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             {loading ? 'Generating...' : 'Generate'}
