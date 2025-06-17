@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { HiOutlineUpload } from 'react-icons/hi';
 
 export default function PromptInput() {
   const router = useRouter();
@@ -52,6 +53,18 @@ export default function PromptInput() {
     }
   };
 
+  const handleCSVUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === 'text/csv') {
+      // TODO: Handle CSV file upload
+      console.log('CSV file selected:', file);
+      // For now, just show an alert - you can implement the actual CSV processing here
+      alert('CSV upload functionality to be implemented');
+    } else {
+      alert('Please select a valid CSV file');
+    }
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
       <form onSubmit={handleSubmit}>
@@ -72,6 +85,21 @@ export default function PromptInput() {
           </button>
         </div>
       </form>
+      
+      {/* CSV Upload Button */}
+      <div className="mt-4 flex justify-center">
+        <label className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition-colors text-white text-sm font-medium rounded-xl cursor-pointer disabled:opacity-50">
+          <HiOutlineUpload className="w-4 h-4" />
+          Upload CSV
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleCSVUpload}
+            className="hidden"
+            disabled={loading}
+          />
+        </label>
+      </div>
       
       {error && (
         <div className="mt-4 bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-2 rounded-lg text-sm">

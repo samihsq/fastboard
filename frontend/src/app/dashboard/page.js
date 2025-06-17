@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { HiOutlineUpload } from 'react-icons/hi';
 import DashboardGrid from '../../components/DashboardGrid';
 import GradientBackground from '../../components/background';
 
@@ -62,6 +63,18 @@ export default function Dashboard() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCSVUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === 'text/csv') {
+      // TODO: Handle CSV file upload
+      console.log('CSV file selected:', file);
+      // For now, just show an alert - you can implement the actual CSV processing here
+      alert('CSV upload functionality to be implemented');
+    } else {
+      alert('Please select a valid CSV file');
     }
   };
 
@@ -152,6 +165,21 @@ export default function Dashboard() {
                 </button>
               </div>
             </form>
+            
+            {/* CSV Upload Button */}
+            <div className="mt-4 flex justify-center">
+              <label className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 transition-colors text-white text-sm font-medium rounded-xl cursor-pointer disabled:opacity-50">
+                <HiOutlineUpload className="w-4 h-4" />
+                Upload CSV
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVUpload}
+                  className="hidden"
+                  disabled={loading}
+                />
+              </label>
+            </div>
           </div>
 
           {error && (
