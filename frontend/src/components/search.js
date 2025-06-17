@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { HiOutlineUpload, HiOutlineX } from 'react-icons/hi';
 
 export default function PromptInput() {
@@ -10,6 +10,32 @@ export default function PromptInput() {
   const [error, setError] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [csvData, setCsvData] = useState(null);
+  const textareaRef = useRef(null);
+
+  // Auto-resize textarea
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset to single line height first
+      textarea.style.height = '1.5rem'; // Single line height
+      
+      // Only expand if content requires more space
+      if (textarea.scrollHeight > textarea.clientHeight) {
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'; // Max height of 120px
+      }
+    }
+  };
+
+  const handleTextareaInput = (e) => {
+    adjustTextareaHeight();
+  };
+
+  useEffect(() => {
+    // Set initial height on component mount
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '1.5rem';
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,20 +129,23 @@ export default function PromptInput() {
       <form onSubmit={handleSubmit}>
         <div className="backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-2xl px-5 py-4 shadow-md flex items-center gap-4">
           <textarea
+            ref={textareaRef}
             name="prompt"
             rows={1}
             placeholder={
               uploadedFile 
                 ? "What insights would you like from your data?" 
-                : "What kind of dashboard would you like?"
+                : "What would you like a dashboard of?"
             }
-            className="flex-2 resize-none bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base"
+            className="flex-1 resize-none bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base h-6 overflow-hidden leading-6"
             disabled={loading}
+            onInput={handleTextareaInput}
+            style={{ height: '1.5rem' }}
           />
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             {loading ? 'Generating...' : 'Generate'}
           </button>

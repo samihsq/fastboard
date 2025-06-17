@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { HiOutlineUpload, HiOutlineX } from 'react-icons/hi';
 import DashboardGrid from '../../components/DashboardGrid';
@@ -12,7 +12,26 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [csvData, setCsvData] = useState(null);
+  const textareaRef = useRef(null);
   const router = useRouter();
+
+  // Auto-resize textarea
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset to single line height first
+      textarea.style.height = '1.5rem'; // Single line height
+      
+      // Only expand if content requires more space
+      if (textarea.scrollHeight > textarea.clientHeight) {
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'; // Max height of 120px
+      }
+    }
+  };
+
+  const handleTextareaInput = (e) => {
+    adjustTextareaHeight();
+  };
 
   useEffect(() => {
     // Get dashboard data from sessionStorage
@@ -32,6 +51,13 @@ export default function Dashboard() {
       router.push('/');
     }
   }, [router]);
+
+  useEffect(() => {
+    // Set initial height on component mount
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '1.5rem';
+    }
+  }, []);
 
   const generateNewDashboard = async (prompt) => {
     setLoading(true);
@@ -112,6 +138,23 @@ export default function Dashboard() {
     if (fileInput) fileInput.value = '';
   };
 
+  const handleWidgetReplace = (widgetIndex, newWidget) => {
+    if (!dashboardData || !dashboardData.widgets) return;
+    
+    // Create a new dashboard data object with the replaced widget
+    const updatedWidgets = [...dashboardData.widgets];
+    updatedWidgets[widgetIndex] = newWidget;
+    
+    const updatedDashboardData = {
+      ...dashboardData,
+      widgets: updatedWidgets,
+      generated_at: Date.now() / 1000
+    };
+    
+    setDashboardData(updatedDashboardData);
+    sessionStorage.setItem('dashboardData', JSON.stringify(updatedDashboardData));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -188,6 +231,9 @@ export default function Dashboard() {
             category={dashboardData.category}
             dataSource={dashboardData.data_source}
             modelUsed={dashboardData.model_used}
+            onWidgetReplace={handleWidgetReplace}
+            csvData={csvData}
+            dashboardContext={dashboardData.dash_name}
           />
         )}
                   
@@ -199,23 +245,29 @@ export default function Dashboard() {
             if (prompt.trim()) {
               generateNewDashboard(prompt);
               e.target.prompt.value = '';
+              // Reset textarea height after clearing
+              setTimeout(() => adjustTextareaHeight(), 0);
             }
           }}>
             <div className="backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-2xl px-5 py-3 shadow-md flex items-center gap-4">
-              <input
+              <textarea
+                ref={textareaRef}
                 name="prompt"
+                rows={1}
                 placeholder={
                   uploadedFile 
                     ? "What insights would you like from your data?" 
                     : "Generate a new dashboard..."
                 }
-                className="flex-1 bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base"
+                className="flex-1 resize-none bg-transparent text-white placeholder:text-gray-300 outline-none border-none focus:ring-0 text-base h-6 overflow-hidden leading-6"
                 disabled={loading}
+                onInput={handleTextareaInput}
+                style={{ height: '1.5rem' }}
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium disabled:opacity-50 flex-shrink-0"
               >
                 {loading ? 'Generating...' : 'Generate'}
               </button>

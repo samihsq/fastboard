@@ -1,6 +1,6 @@
 import WidgetCard from './WidgetCard';
 
-export default function DashboardGrid({ widgets, category, dataSource, modelUsed }) {
+export default function DashboardGrid({ widgets, category, dataSource, modelUsed, onWidgetReplace, csvData, dashboardContext }) {
   if (!widgets || widgets.length === 0) {
     return (
       <div className="text-center text-gray-400 py-8">
@@ -18,6 +18,9 @@ export default function DashboardGrid({ widgets, category, dataSource, modelUsed
           category={category}
           index={index}
           dataSource={"Web Research"}
+          onWidgetReplace={onWidgetReplace}
+          csvData={csvData}
+          dashboardContext={dashboardContext}
         />
       ))}
     </div>
