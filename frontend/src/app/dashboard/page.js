@@ -43,7 +43,6 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           prompt: prompt,
-          model: "gpt-4.1-nano"
         })
       });
 
@@ -85,7 +84,7 @@ export default function Dashboard() {
         <div className="relative z-20 text-white text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-xl">Generating your dashboard...</p>
-          <p className="text-sm text-gray-300 mt-2">Fetching data from APIs</p>
+          <p className="text-sm text-gray-300 mt-2">AI is researching your topic...</p>
         </div>
       </div>
     );
@@ -130,15 +129,29 @@ export default function Dashboard() {
             </button>
           </div>
           
-          {/* Category Badge */}
-          {dashboardData?.category && (
-            <div className="inline-block">
+          {/* Enhanced metadata section */}
+          <div className="flex flex-wrap gap-3 mb-4">
+            {/* Category Badge */}
+            {dashboardData?.category && (
               <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 text-blue-200 rounded-full text-sm font-medium">
                 {dashboardData.category.toUpperCase()}
               </span>
-            </div>
-          )}
-
+            )}
+            
+            {/* Data Source Badge */}
+            {dashboardData?.data_source && (
+              <span className="px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-200 rounded-full text-sm font-medium">
+                📡 {dashboardData.data_source}
+              </span>
+            )}
+            
+            {/* Model Badge */}
+            {dashboardData?.model_used && (
+              <span className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 text-purple-200 rounded-full text-sm font-medium">
+                🤖 {dashboardData.model_used}
+              </span>
+            )}
+          </div>
 
           {error && (
             <div className="mt-4 bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-2 rounded-lg">
@@ -152,6 +165,8 @@ export default function Dashboard() {
           <DashboardGrid 
             widgets={dashboardData.widgets}
             category={dashboardData.category}
+            dataSource={dashboardData.data_source}
+            modelUsed={dashboardData.model_used}
           />
         )}
                   
@@ -183,16 +198,24 @@ export default function Dashboard() {
           </form>
         </div>
 
-
-        {/* Footer Info */}
+        {/* Enhanced Footer Info */}
         {dashboardData && (
           <div className="mt-8 text-center text-gray-400 text-sm">
-            Dashboard generated with {dashboardData.widgets?.length || 0} widgets
-            {dashboardData.generated_at && (
-              <span className="ml-2">
-                • Generated {new Date(dashboardData.generated_at * 1000).toLocaleTimeString()}
+            <div className="flex flex-wrap justify-center gap-4">
+              <span>
+                📊 {dashboardData.widgets?.length || 0} widgets
               </span>
-            )}
+              {dashboardData.generated_at && (
+                <span>
+                  🕒 Generated {new Date(dashboardData.generated_at * 1000).toLocaleTimeString()}
+                </span>
+              )}
+              {dashboardData.data_source && (
+                <span>
+                  🔍 Powered by {dashboardData.data_source}
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>

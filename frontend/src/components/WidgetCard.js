@@ -11,8 +11,8 @@ const getIcon = (type) => {
   }
 };
 
-export default function WidgetCard({ widget, category, index }) {
-  const { name, type, source, data } = widget;
+export default function WidgetCard({ widget, category, index, dataSource = "AI Research" }) {
+  const { name, type, data } = widget;
   
   const renderChart = () => {
     if (!data) {
@@ -38,6 +38,9 @@ export default function WidgetCard({ widget, category, index }) {
                   stroke="#9CA3AF" 
                   fontSize={12} 
                   tick={{ fill: '#9CA3AF' }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
                 />
                 <YAxis 
                   stroke="#9CA3AF" 
@@ -70,6 +73,9 @@ export default function WidgetCard({ widget, category, index }) {
                   stroke="#9CA3AF" 
                   fontSize={12} 
                   tick={{ fill: '#9CA3AF' }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
                 />
                 <YAxis 
                   stroke="#9CA3AF" 
@@ -107,7 +113,7 @@ export default function WidgetCard({ widget, category, index }) {
                   data.value
                 }
               </div>
-              <div className="text-gray-400 text-sm">
+              <div className="text-gray-400 text-sm text-center px-2">
                 {data.label || 'Metric'}
               </div>
             </div>
@@ -130,16 +136,6 @@ export default function WidgetCard({ widget, category, index }) {
     );
   };
 
-  // Determine the source display name (just domain or API name)
-  const getSourceName = (url) => {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.hostname;
-    } catch {
-      return url.split('/')[2] || url;
-    }
-  };
-
   return (
     <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-lg hover:bg-white/15 transition-all duration-300">
       {/* Widget Header */}
@@ -160,17 +156,23 @@ export default function WidgetCard({ widget, category, index }) {
       {/* Widget Footer */}
       <div className="flex items-center justify-between text-xs text-gray-400">
         <div className="truncate flex-1">
-          <span className="font-medium">Source:</span> {getSourceName(source)}
+          <span className="font-medium">Source:</span> {dataSource}
         </div>
         <div className="ml-2 px-2 py-1 bg-gray-700/50 rounded-full">
           {type.toUpperCase()}
         </div>
       </div>
       
-      {/* Debug info - can be removed in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-2 text-xs text-gray-500 border-t border-gray-600 pt-2">
-          Data: {JSON.stringify(data, null, 2).substring(0, 100)}...
+      {/* Data validation info */}
+      {data && Array.isArray(data) && data.length > 0 && (
+        <div className="mt-2 text-xs text-green-400">
+          ✓ {data.length} data points loaded
+        </div>
+      )}
+      
+      {data && !Array.isArray(data) && data.value && (
+        <div className="mt-2 text-xs text-green-400">
+          ✓ Real-time data
         </div>
       )}
     </div>
