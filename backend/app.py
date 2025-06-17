@@ -1,13 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import openai
-import os
 import requests
+import os
 import json
 from pandasai import SmartDataframe
 import pandas as pd
 import time
 from dotenv import load_dotenv
+
 from pandasai.llm.openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -15,112 +15,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
 
-# Configure OpenAI
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# Configure CORS with environment variable support
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+CORS(app, origins=ALLOWED_ORIGINS)  # Enable CORS for all routes
 
-def fetch_api_data(widget, timeout=10):
-    """
-    Fetch data from a given API endpoint
-    Returns sample data if the API call fails
-    """
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        
-        response = requests.get(widget['source'], headers=headers, timeout=timeout)
-        
-        if response.status_code == 200:
-            try:
-                api_data = response.json()
-                # Convert API data to chart-friendly format
-                return convert_api_data_to_chart_format(api_data, widget)
-            except json.JSONDecodeError:
-                pass
-    except Exception as e:
-        print(f"API call failed for {widget['source']}: {str(e)}")
-    
-    # Return sample data if API call fails
-    return generate_fallback_data(widget)
-
-def convert_api_data_to_chart_format(api_data, widget):
-    """
-    Convert raw API data to chart-friendly format
-    This is a simplified version - you'd customize this based on actual API responses
-    """
-    chart_type = widget['type']
-    
-    if isinstance(api_data, dict):
-        if chart_type == 'number':
-            # For number widgets, try to find a numeric value
-            for key, value in api_data.items():
-                if isinstance(value, (int, float)):
-                    return {"value": value, "label": key}
-            return {"value": len(api_data), "label": "Data Points"}
-        
-        elif chart_type in ['bar', 'line']:
-            # For bar/line charts, try to create name-value pairs
-            chart_data = []
-            count = 0
-            for key, value in api_data.items():
-                if isinstance(value, (int, float)) and count < 6:
-                    chart_data.append({"name": str(key)[:10], "value": value})
-                    count += 1
-                elif isinstance(value, list) and count < 6:
-                    chart_data.append({"name": str(key)[:10], "value": len(value)})
-                    count += 1
-            return chart_data if chart_data else generate_fallback_data(widget)
-    
-    elif isinstance(api_data, list) and len(api_data) > 0:
-        if chart_type == 'number':
-            return {"value": len(api_data), "label": "Total Items"}
-        
-        elif chart_type in ['bar', 'line']:
-            # Try to extract meaningful data from list
-            chart_data = []
-            for i, item in enumerate(api_data[:6]):  # Limit to 6 items
-                if isinstance(item, dict):
-                    # Find the first numeric value
-                    for key, value in item.items():
-                        if isinstance(value, (int, float)):
-                            chart_data.append({"name": f"Item {i+1}", "value": value})
-                            break
-                    else:
-                        chart_data.append({"name": f"Item {i+1}", "value": i+1})
-                else:
-                    chart_data.append({"name": f"Item {i+1}", "value": i+1})
-            return chart_data
-    
-    return generate_fallback_data(widget)
-
-def generate_fallback_data(widget):
-    """
-    Generate sample data when API calls fail
-    """
-    chart_type = widget['type']
-    
-    if chart_type == 'bar':
-        return [
-            {"name": "Category A", "value": 65},
-            {"name": "Category B", "value": 78},
-            {"name": "Category C", "value": 52},
-            {"name": "Category D", "value": 84}
-        ]
-    elif chart_type == 'line':
-        return [
-            {"name": "Jan", "value": 45},
-            {"name": "Feb", "value": 55},
-            {"name": "Mar", "value": 72},
-            {"name": "Apr", "value": 68},
-            {"name": "May", "value": 85},
-            {"name": "Jun", "value": 92}
-        ]
-    elif chart_type == 'number':
-        return {"value": 73, "label": "Current Metric"}
-    else:
-        return []
+# Configure Perplexity API
+PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY')
+PERPLEXITY_BASE_URL = 'https://api.perplexity.ai'
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -130,11 +32,10 @@ def health_check():
 @app.route('/generate-dashboard', methods=['POST'])
 def generate_dashboard():
     """
-    Full dashboard generation endpoint:
+    Enhanced dashboard generation endpoint:
     1. Gets prompt from frontend
-    2. Calls OpenAI to get dashboard specification
-    3. Calls the APIs specified in the response
-    4. Returns dashboard with real data
+    2. Uses Perplexity AI to research the topic and gather actual data
+    3. Returns dashboard with real, structured data ready for visualization
     """
     try:
         # Get JSON data from request
@@ -144,115 +45,444 @@ def generate_dashboard():
             return jsonify({"error": "No prompt provided"}), 400
         
         prompt = data['prompt']
-        model = data.get('model', 'gpt-4.1-nano')
+        model = data.get('model', 'sonar-pro')
         
         if not prompt.strip():
             return jsonify({"error": "Empty prompt provided"}), 400
         
         # Check if API key is configured
-        if not openai.api_key:
-            return jsonify({"error": "OpenAI API key not configured"}), 500
+        if not PERPLEXITY_API_KEY:
+            return jsonify({"error": "Perplexity API key not configured"}), 500
         
-        # Step 1: Get dashboard specification from OpenAI
-        system_prompt = """You must respond ONLY with valid JSON on a single line without any newlines or formatting. Analyze the user's prompt and create a dashboard specification. Return JSON with the following structure:
+        # Enhanced system prompt for comprehensive data gathering
+        system_prompt = """You are a data analyst AI that researches topics and creates comprehensive dashboards with real data. You must respond ONLY with valid JSON on a single line without any newlines or formatting.
 
-{"dash_name": "A descriptive name for the dashboard", "category": "sports" | "sales" | "course" | "n/a", "widgets": [{"name": "Widget name describing what it shows", "type": "bar" | "line" | "number", "source": "Exact API endpoint URL where this data can be retrieved"}]}
+Research the given topic thoroughly and return a JSON object with this exact structure:
 
-Guidelines:
-- Choose 2-4 relevant widgets based on the user's request
-- Make widget names descriptive and relevant to the prompt
-- Choose appropriate chart types: "bar" for comparisons, "line" for trends over time, "number" for single metrics
-- Return compact JSON without any newlines, spaces, or formatting
+{"dash_name": "Descriptive dashboard name", "category": "sports" | "business" | "entertainment" | "technology" | "science" | "finance" | "health" | "education" | "other", "widgets": [{"name": "Widget title", "type": "bar" | "line" | "number", "data": DATA_STRUCTURE, "source_url": "URL where you found this specific data"}]}
 
-User prompt: """
-        
-        full_prompt = system_prompt + prompt
-        
-        # Make request to OpenAI API
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that responds only in valid JSON format."},
-                {"role": "user", "content": full_prompt}
-            ],
-            max_tokens=1000,
-            temperature=0.3
-        )
-        
-        # Extract and parse the OpenAI response
-        ai_response = response.choices[0].message.content
-        
-        try:
-            dashboard_spec = json.loads(ai_response)
-        except json.JSONDecodeError:
-            return jsonify({"error": "Invalid JSON response from OpenAI"}), 500
-        
-        # Step 2: Fetch data from each API endpoint specified in the dashboard
-        widgets_with_data = []
-
-        # Use ThreadPoolExecutor to fetch data from multiple APIs concurrently
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            future_to_widget = {
-                executor.submit(fetch_api_data, widget): widget 
-                for widget in dashboard_spec.get('widgets', [])
-            }
-            
-            for future in as_completed(future_to_widget):
-                widget = future_to_widget[future]
-                try:
-                    df = pd.read_csv('./data/sales.csv')
-                    df.columns = df.columns.str.strip()
-                    df = df.astype(str)
-                    llm = OpenAI(api_token=os.environ["OPENAI_API_KEY"])
-                    smart_df = SmartDataframe(df, config={
-                        "llm": llm,
-                        "save_charts": False,  # disables plt.show() and saving images
-                        "enable_cache": False,  # optional but reduces weird behavior
-                        "verbose": True,
-                        "disable_plotting": True,
-                    })
-                    pandas_prompt = """Read the csv thoroughly and return a JSON object with this exact structure:
-
-structure rules:
+DATA_STRUCTURE rules:
 - For "bar" charts: [{"name": "Category", "value": number}, {"name": "Category2", "value": number}, ...]
 - For "line" charts: [{"name": "Period", "value": number}, {"name": "Period2", "value": number}, ...]  
 - For "number" widgets: {"value": number, "label": "Description"}
+
+Guidelines:
+- Research the topic using current, factual information
+- Create 3-4 relevant widgets that best represent the topic
+- Use real statistics, numbers, and data points
+- For each widget, include the "source_url" field with the actual URL where you found that specific data
+- Choose appropriate chart types based on the data:
+  * "bar" for comparisons (stats, rankings, categories)
+  * "line" for trends over time (years, seasons, periods)
+  * "number" for single key metrics (totals, averages, records)
+- Make widget names descriptive and specific
+- Ensure all values are actual numbers, not strings
+- For people: include career stats, achievements, timeline data
+- For companies: financial data, market metrics, growth trends
+- For topics: relevant statistics, comparisons, historical data
+- Include credible source URLs for each widget (e.g., official websites, news sources, databases)
+- Return compact JSON without any newlines, spaces, or formatting
+
+Examples:
+- Sports person: career stats, seasonal performance, records, awards
+- Company: revenue trends, market share, employee count, stock performance
+- Technology: adoption rates, market size, growth metrics, comparisons
+- Events: attendance, impact metrics, timeline data, comparisons
+
 User topic: """
-                    widgets_with_data.append({
-                        'name': widget['name'],
-                        'type': widget['type'],
-                        'source': "PandasAI",
-                        'data': smart_df.chat(pandas_prompt + "You should generate a: " + widget['type'] + "Prompt: " + prompt + " Specifically, look for: " + widget['name'])
-                    })
-                except Exception as e:
-                    # If data fetching fails, use fallback data
-                    widgets_with_data.append({
-                        'name': widget['name'],
-                        'type': widget['type'],
-                        'source': widget['source'],
-                        'data': generate_fallback_data(widget)
-                    })
         
-        # Step 3: Return complete dashboard with data
-        dashboard_with_data = {
-            'dash_name': dashboard_spec.get('dash_name', 'Generated Dashboard'),
-            'category': dashboard_spec.get('category', 'n/a'),
-            'widgets': widgets_with_data,
-            'generated_at': time.time()
+        full_prompt = system_prompt + prompt
+        
+        # Make request to Perplexity API
+        headers = {
+            'Authorization': f'Bearer {PERPLEXITY_API_KEY}',
+            'Content-Type': 'application/json'
         }
+        
+        payload = {
+            'model': model,
+            'messages': [
+                {"role": "system", "content": "You are a data research assistant that provides factual, current information in structured JSON format."},
+                {"role": "user", "content": full_prompt}
+            ],
+            'max_tokens': 2000,
+            'temperature': 0.2
+        }
+        
+        response = requests.post(
+            f'{PERPLEXITY_BASE_URL}/chat/completions',
+            headers=headers,
+            json=payload,
+            timeout=45
+        )
+        
+        if response.status_code != 200:
+            return jsonify({"error": f"Perplexity API error: {response.status_code} - {response.text}"}), 500
+        
+        # Extract and parse the Perplexity response
+        response_data = response.json()
+        ai_response = response_data['choices'][0]['message']['content']
+        
+        # Clean up the response (remove markdown formatting if present)
+        ai_response = ai_response.strip()
+        if ai_response.startswith('```json'):
+            ai_response = ai_response.replace('```json', '').replace('```', '').strip()
+        
+        try:
+            dashboard_data = json.loads(ai_response)
+        except json.JSONDecodeError as e:
+            return jsonify({"error": f"Invalid JSON response from Perplexity AI: {str(e)}", "raw_response": ai_response}), 500
+        
+        # Validate the dashboard structure
+        if not isinstance(dashboard_data, dict) or 'widgets' not in dashboard_data:
+            return jsonify({"error": "Invalid dashboard structure from Perplexity AI"}), 500
+        
+        # Add metadata
+        dashboard_data['generated_at'] = time.time()
+        dashboard_data['data_source'] = 'Perplexity AI Research'
+        dashboard_data['model_used'] = model
+        
+        # Validate each widget has the correct data structure
+        for widget in dashboard_data.get('widgets', []):
+            if widget.get('type') == 'number':
+                if not isinstance(widget.get('data'), dict) or 'value' not in widget['data']:
+                    # Provide fallback structure for number widgets
+                    widget['data'] = {"value": 0, "label": "No data available"}
+            elif widget.get('type') in ['bar', 'line']:
+                if not isinstance(widget.get('data'), list):
+                    # Provide fallback structure for chart widgets
+                    widget['data'] = [{"name": "No data", "value": 0}]
         
         return jsonify({
             "success": True,
-            "dashboard": dashboard_with_data,
-            "model": model
+            "dashboard": dashboard_data,
+            "message": "Dashboard generated with real-time research data"
         })
         
-    except openai.error.AuthenticationError:
-        return jsonify({"error": "Invalid OpenAI API key"}), 401
-    except openai.error.RateLimitError:
-        return jsonify({"error": "OpenAI API rate limit exceeded"}), 429
-    except openai.error.APIError as e:
-        return jsonify({"error": f"OpenAI API error: {str(e)}"}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Network error connecting to Perplexity API: {str(e)}"}), 500
+    except KeyError as e:
+        return jsonify({"error": f"Unexpected response format from Perplexity API: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+@app.route('/generate-csv-dashboard', methods=['POST'])
+def generate_csv_dashboard():
+    """
+    CSV-based dashboard generation endpoint:
+    1. Gets CSV data and prompt from frontend
+    2. Uses Perplexity AI to analyze the CSV data and generate insights
+    3. Returns dashboard with real, structured data from the CSV analysis
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        
+        if not data or 'prompt' not in data or 'csv_data' not in data:
+            return jsonify({"error": "Both prompt and CSV data are required"}), 400
+        
+        prompt = data['prompt']
+        csv_data = data['csv_data']
+        model = data.get('model', 'sonar-pro')
+        
+        if not prompt.strip():
+            return jsonify({"error": "Empty prompt provided"}), 400
+        
+        if not csv_data.strip():
+            return jsonify({"error": "Empty CSV data provided"}), 400
+        
+        # Check if API key is configured
+        if not PERPLEXITY_API_KEY:
+            return jsonify({"error": "Perplexity API key not configured"}), 500
+        
+        # Limit CSV data size (first 5000 characters to avoid token limits)
+        csv_preview = csv_data[:5000] if len(csv_data) > 5000 else csv_data
+        
+        # Enhanced system prompt for CSV analysis
+        system_prompt = f"""You are a data analyst AI that analyzes CSV data and creates comprehensive dashboards. You must respond ONLY with valid JSON on a single line without any newlines or formatting.
+
+Here is the CSV data to analyze:
+```
+{csv_preview}
+```
+
+Based on the CSV data above and the user's request, create a JSON object with this exact structure:
+
+{{"dash_name": "Descriptive dashboard name", "category": "business" | "sales" | "finance" | "analytics" | "performance" | "other", "widgets": [{{"name": "Widget title", "type": "bar" | "line" | "number", "data": DATA_STRUCTURE, "source_url": "CSV Data Analysis"}}]}}
+
+DATA_STRUCTURE rules:
+- For "bar" charts: [{{"name": "Category", "value": number}}, {{"name": "Category2", "value": number}}, ...]
+- For "line" charts: [{{"name": "Period", "value": number}}, {{"name": "Period2", "value": number}}, ...]  
+- For "number" widgets: {{"value": number, "label": "Description"}}
+
+Guidelines:
+- Analyze the actual CSV data provided above
+- Create 3-4 relevant widgets that best represent the CSV data and answer the user's question
+- Use real data points from the CSV
+- Choose appropriate chart types based on the data:
+  * "bar" for comparisons, categories, rankings
+  * "line" for time series, trends, sequential data
+  * "number" for key metrics, totals, averages, counts
+- Make widget names descriptive and specific to the CSV content
+- Ensure all values are actual numbers extracted from the CSV
+- For source_url, always use "CSV Data Analysis"
+- Return compact JSON without any newlines, spaces, or formatting
+- Focus on the most interesting and relevant insights from the data
+
+User's question about the CSV: """
+        
+        full_prompt = system_prompt + prompt
+        
+        # Make request to Perplexity API
+        headers = {
+            'Authorization': f'Bearer {PERPLEXITY_API_KEY}',
+            'Content-Type': 'application/json'
+        }
+        
+        payload = {
+            'model': model,
+            'messages': [
+                {"role": "system", "content": "You are a data analyst that analyzes CSV data and provides structured JSON responses for dashboard creation."},
+                {"role": "user", "content": full_prompt}
+            ],
+            'max_tokens': 2000,
+            'temperature': 0.1  # Lower temperature for more consistent CSV analysis
+        }
+        
+        response = requests.post(
+            f'{PERPLEXITY_BASE_URL}/chat/completions',
+            headers=headers,
+            json=payload,
+            timeout=45
+        )
+        
+        if response.status_code != 200:
+            return jsonify({"error": f"Perplexity API error: {response.status_code} - {response.text}"}), 500
+        
+        # Extract and parse the Perplexity response
+        response_data = response.json()
+        ai_response = response_data['choices'][0]['message']['content']
+        
+        # Clean up the response (remove markdown formatting if present)
+        ai_response = ai_response.strip()
+        if ai_response.startswith('```json'):
+            ai_response = ai_response.replace('```json', '').replace('```', '').strip()
+        
+        try:
+            dashboard_data = json.loads(ai_response)
+        except json.JSONDecodeError as e:
+            return jsonify({"error": f"Invalid JSON response from Perplexity AI: {str(e)}", "raw_response": ai_response}), 500
+        
+        # Validate the dashboard structure
+        if not isinstance(dashboard_data, dict) or 'widgets' not in dashboard_data:
+            return jsonify({"error": "Invalid dashboard structure from Perplexity AI"}), 500
+        
+        # Add metadata
+        dashboard_data['generated_at'] = time.time()
+        dashboard_data['data_source'] = 'CSV Data Analysis'
+        dashboard_data['model_used'] = model
+        dashboard_data['csv_filename'] = 'uploaded_data.csv'  # Could be enhanced to get actual filename
+        
+        # Validate each widget has the correct data structure
+        for widget in dashboard_data.get('widgets', []):
+            if widget.get('type') == 'number':
+                if not isinstance(widget.get('data'), dict) or 'value' not in widget['data']:
+                    # Provide fallback structure for number widgets
+                    widget['data'] = {"value": 0, "label": "No data available"}
+            elif widget.get('type') in ['bar', 'line']:
+                if not isinstance(widget.get('data'), list):
+                    # Provide fallback structure for chart widgets
+                    widget['data'] = [{"name": "No data", "value": 0}]
+            
+            # Ensure source_url is set for CSV widgets
+            if 'source_url' not in widget:
+                widget['source_url'] = 'CSV Data Analysis'
+        
+        return jsonify({
+            "success": True,
+            "dashboard": dashboard_data,
+            "message": "Dashboard generated from CSV data analysis"
+        })
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Network error connecting to Perplexity API: {str(e)}"}), 500
+    except KeyError as e:
+        return jsonify({"error": f"Unexpected response format from Perplexity API: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+@app.route('/generate-single-widget', methods=['POST'])
+def generate_single_widget():
+    """
+    Single widget generation endpoint for widget replacement:
+    1. Gets prompt from frontend for a specific widget
+    2. Uses Perplexity AI to research and generate data for just one widget
+    3. Returns single widget data ready for replacement
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        
+        if not data or 'prompt' not in data:
+            return jsonify({"error": "No prompt provided"}), 400
+        
+        prompt = data['prompt']
+        model = data.get('model', 'sonar-pro')
+        widget_type = data.get('widget_type', 'auto')  # auto, bar, line, number
+        csv_data = data.get('csv_data')  # Optional CSV data
+        dashboard_context = data.get('dashboard_context', '')  # Dashboard context for maintaining topic
+        
+        if not prompt.strip():
+            return jsonify({"error": "Empty prompt provided"}), 400
+        
+        # Check if API key is configured
+        if not PERPLEXITY_API_KEY:
+            return jsonify({"error": "Perplexity API key not configured"}), 500
+        
+        # Combine context with user prompt if context is available
+        if dashboard_context and not csv_data:
+            # For research-based widgets, prepend context to make the prompt more specific
+            contextual_prompt = f"For the topic '{dashboard_context}', show me {prompt}"
+        else:
+            contextual_prompt = prompt
+        
+        # System prompt for single widget generation
+        if csv_data:
+            # CSV-based widget generation
+            csv_preview = csv_data[:3000] if len(csv_data) > 3000 else csv_data
+            context_instruction = f"The dashboard is about: {dashboard_context}. " if dashboard_context else ""
+            system_prompt = f"""You are a data analyst AI that creates individual dashboard widgets from CSV data. You must respond ONLY with valid JSON on a single line without any newlines or formatting.
+
+Here is the CSV data to analyze:
+```
+{csv_preview}
+```
+
+{context_instruction}Based on the CSV data above and the user's request, create a JSON object for a SINGLE widget with this exact structure:
+
+{{"name": "Widget title", "type": "bar" | "line" | "number", "data": DATA_STRUCTURE, "source_url": "CSV Data Analysis"}}
+
+DATA_STRUCTURE rules:
+- For "bar" charts: [{{"name": "Category", "value": number}}, {{"name": "Category2", "value": number}}, ...]
+- For "line" charts: [{{"name": "Period", "value": number}}, {{"name": "Period2", "value": number}}, ...]  
+- For "number" widgets: {{"value": number, "label": "Description"}}
+
+Guidelines:
+- Create ONE widget that best answers the user's specific question
+- Use actual data from the CSV provided
+- {context_instruction}Focus on the specific aspect requested while maintaining relevance to the main topic
+- Choose the most appropriate chart type for the requested data
+- Make the widget name descriptive and specific
+- Ensure all values are actual numbers from the CSV
+- Return compact JSON without any newlines, spaces, or formatting
+
+User's widget request: """
+        else:
+            # Regular research-based widget generation
+            widget_type_hint = ""
+            if widget_type != 'auto':
+                widget_type_hint = f"Use widget type: {widget_type}. "
+            
+            context_instruction = f"This widget is for a dashboard about: {dashboard_context}. " if dashboard_context else ""
+            system_prompt = f"""You are a data analyst AI that researches topics and creates individual dashboard widgets. You must respond ONLY with valid JSON on a single line without any newlines or formatting.
+
+{context_instruction}Research the given topic thoroughly and return a JSON object for a SINGLE widget with this exact structure:
+
+{{"name": "Widget title", "type": "bar" | "line" | "number", "data": DATA_STRUCTURE, "source_url": "URL where you found this specific data"}}
+
+DATA_STRUCTURE rules:
+- For "bar" charts: [{{"name": "Category", "value": number}}, {{"name": "Category2", "value": number}}, ...]
+- For "line" charts: [{{"name": "Period", "value": number}}, {{"name": "Period2", "value": number}}, ...]  
+- For "number" widgets: {{"value": number, "label": "Description"}}
+
+Guidelines:
+- Research the topic using current, factual information
+- Create ONE widget that best represents the requested data
+- Use real statistics, numbers, and data points
+- {context_instruction}The user's request should be interpreted in the context of the main dashboard topic
+- {widget_type_hint}Choose the most appropriate chart type for the data:
+  * "bar" for comparisons, rankings, categories
+  * "line" for trends over time, sequences
+  * "number" for single key metrics, totals, records
+- Include the "source_url" field with the actual URL where you found the data
+- Make the widget name descriptive and specific to both the context and the request
+- Ensure all values are actual numbers, not strings
+- Include credible source URLs (official websites, news sources, databases)
+- Return compact JSON without any newlines, spaces, or formatting
+
+User's widget request: """
+        
+        full_prompt = system_prompt + contextual_prompt
+        
+        # Make request to Perplexity API
+        headers = {
+            'Authorization': f'Bearer {PERPLEXITY_API_KEY}',
+            'Content-Type': 'application/json'
+        }
+        
+        payload = {
+            'model': model,
+            'messages': [
+                {"role": "system", "content": "You are a data research assistant that provides factual, current information in structured JSON format for individual dashboard widgets."},
+                {"role": "user", "content": full_prompt}
+            ],
+            'max_tokens': 1000,
+            'temperature': 0.2
+        }
+        
+        response = requests.post(
+            f'{PERPLEXITY_BASE_URL}/chat/completions',
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            return jsonify({"error": f"Perplexity API error: {response.status_code} - {response.text}"}), 500
+        
+        # Extract and parse the Perplexity response
+        response_data = response.json()
+        ai_response = response_data['choices'][0]['message']['content']
+        
+        # Clean up the response (remove markdown formatting if present)
+        ai_response = ai_response.strip()
+        if ai_response.startswith('```json'):
+            ai_response = ai_response.replace('```json', '').replace('```', '').strip()
+        
+        try:
+            widget_data = json.loads(ai_response)
+        except json.JSONDecodeError as e:
+            return jsonify({"error": f"Invalid JSON response from Perplexity AI: {str(e)}", "raw_response": ai_response}), 500
+        
+        # Validate the widget structure
+        required_fields = ['name', 'type', 'data']
+        if not isinstance(widget_data, dict) or not all(field in widget_data for field in required_fields):
+            return jsonify({"error": "Invalid widget structure from Perplexity AI"}), 500
+        
+        # Validate data structure based on type
+        widget_type = widget_data.get('type')
+        if widget_type == 'number':
+            if not isinstance(widget_data.get('data'), dict) or 'value' not in widget_data['data']:
+                widget_data['data'] = {"value": 0, "label": "No data available"}
+        elif widget_type in ['bar', 'line']:
+            if not isinstance(widget_data.get('data'), list):
+                widget_data['data'] = [{"name": "No data", "value": 0}]
+        
+        # Ensure source_url is present
+        if 'source_url' not in widget_data:
+            widget_data['source_url'] = 'CSV Data Analysis' if csv_data else 'AI Research'
+
+        
+        return jsonify({
+            "success": True,
+            "widget": widget_data,
+            "message": "Single widget generated successfully"
+        })
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Network error connecting to Perplexity API: {str(e)}"}), 500
+    except KeyError as e:
+        return jsonify({"error": f"Unexpected response format from Perplexity API: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 

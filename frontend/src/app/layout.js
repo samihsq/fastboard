@@ -14,6 +14,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata = {
   title: "Fastboard",
   description: "AI-powered dashboard generator",
+  icons: {
+    icon: '/fastboard.ico',
+  },
 };
 
 export default function RootLayout({ children }) {
