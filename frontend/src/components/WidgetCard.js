@@ -76,7 +76,8 @@ export default function WidgetCard({ widget, category, index, dataSource = "AI R
         payload.csv_data = csvData;
       }
 
-      const response = await fetch('http://localhost:8000/generate-single-widget', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+      const response = await fetch(baseUrl + '/generate-single-widget', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

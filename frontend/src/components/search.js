@@ -46,12 +46,14 @@ export default function PromptInput() {
       setError(null);
       
       try {
-        let endpoint = 'http://localhost:8000/generate-dashboard';
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+        let endpoint = baseUrl + '/generate-dashboard';
         let payload = { prompt: prompt };
 
         // If CSV is uploaded, use the CSV endpoint
         if (csvData) {
-          endpoint = 'http://localhost:8000/generate-csv-dashboard';
+          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+          endpoint = baseUrl + '/generate-csv-dashboard';
           payload = { 
             prompt: prompt,
             csv_data: csvData 
