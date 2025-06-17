@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+
 export default function GradientBackground() {
   return (
     <div className="fixed w-full h-screen overflow-hidden bg-black text-white z-0">
@@ -8,8 +12,6 @@ export default function GradientBackground() {
       </div>
     
       <div className="absolute inset-0 z-10 backdrop-blur-2xl bg-black/10" />
-      
-
     </div>
-        );
+  );
 }
