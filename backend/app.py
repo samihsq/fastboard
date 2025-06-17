@@ -10,7 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+
+# Configure CORS with environment variable support
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+CORS(app, origins=ALLOWED_ORIGINS)  # Enable CORS for all routes
 
 # Configure Perplexity API
 PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY')
