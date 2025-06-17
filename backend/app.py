@@ -3,8 +3,13 @@ from flask_cors import CORS
 import requests
 import os
 import json
+from pandasai import SmartDataframe
+import pandas as pd
 import time
 from dotenv import load_dotenv
+
+from pandasai.llm.openai import OpenAI
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Load environment variables
 load_dotenv()
@@ -466,6 +471,7 @@ User's widget request: """
         # Ensure source_url is present
         if 'source_url' not in widget_data:
             widget_data['source_url'] = 'CSV Data Analysis' if csv_data else 'AI Research'
+
         
         return jsonify({
             "success": True,
