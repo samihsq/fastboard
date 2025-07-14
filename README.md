@@ -2,7 +2,7 @@
 
 A robust AI-powered dashboard generator that transforms natural language prompts into interactive data visualizations.
 
-🔗 **Live Demo (cold start takes ~1 minute for everything to load)**: [https://fastboard-frontend.onrender.com/](https://fastboard-frontend.onrender.com/)
+🔗 **Live Demo**: [https://fastboard.vercel.app/](https://fastboard.vercel.app/)
 
 <p align="center">
   <img width="640" alt="Image of front page, with prompt: Tell me a bit about Lebron James's scoring history" src="https://github.com/user-attachments/assets/349aeda2-717f-4780-b536-7bc07b4a9623" />
@@ -60,3 +60,7 @@ _Created at Corgi Hacks with ❤️_
 - **Backend:** Flask, Flask-CORS, Requests
 - **AI:** Perplexity Sonar Pro
 - **Hosting:** Render.com
+
+
+## Deployment
+On this branch, ```cd frontend```, then do ```vercel --prod```.
