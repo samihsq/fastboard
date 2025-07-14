@@ -45,7 +45,7 @@ def generate_dashboard():
             return jsonify({"error": "No prompt provided"}), 400
         
         prompt = data['prompt']
-        model = data.get('model', 'sonar-pro')
+        model = data.get('model', 'sonar')
         
         if not prompt.strip():
             return jsonify({"error": "Empty prompt provided"}), 400
@@ -183,7 +183,7 @@ def generate_csv_dashboard():
         
         prompt = data['prompt']
         csv_data = data['csv_data']
-        model = data.get('model', 'sonar-pro')
+        model = data.get('model', 'sonar')
         
         if not prompt.strip():
             return jsonify({"error": "Empty prompt provided"}), 400
@@ -327,7 +327,7 @@ def generate_single_widget():
             return jsonify({"error": "No prompt provided"}), 400
         
         prompt = data['prompt']
-        model = data.get('model', 'sonar-pro')
+        model = data.get('model', 'sonar')
         widget_type = data.get('widget_type', 'auto')  # auto, bar, line, number
         csv_data = data.get('csv_data')  # Optional CSV data
         dashboard_context = data.get('dashboard_context', '')  # Dashboard context for maintaining topic

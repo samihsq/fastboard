@@ -64,13 +64,12 @@ export default function Dashboard() {
     setError(null);
     
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-      let endpoint = `${baseUrl}/generate-dashboard`;
+      let endpoint = '/api/generate-dashboard';
       let payload = { prompt: prompt };
 
       // If CSV is uploaded, use the CSV endpoint
       if (csvData) {
-        endpoint = `${baseUrl}/generate-csv-dashboard`;
+        endpoint = '/api/generate-csv-dashboard';
         payload = { 
           prompt: prompt,
           csv_data: csvData 
